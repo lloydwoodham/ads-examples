@@ -27,9 +27,9 @@ def get_config():
     return {
         'url': 'https://api.adsabs.harvard.edu/v1/biblib',
         'headers': {
-            'Authorization': 'Bearer:{}'.format(token),
+            'Authorization': f'Bearer:{token}',
             'Content-Type': 'application/json',
-        }
+        },
     }
 
 
@@ -41,16 +41,12 @@ def get_libraries():
 
     config = get_config()
 
-    r = requests.get(
-        '{}/libraries'.format(config['url']),
-        headers=config['headers']
-    )
+    r = requests.get(f"{config['url']}/libraries", headers=config['headers'])
 
     # Collect a list of all of our libraries, this will include the number
     # of documents, the name, description, id, and other meta data
     try:
-        data = r.json()['libraries']
-        return data
+        return r.json()['libraries']
     except ValueError:
         raise ValueError(r.text)
 
@@ -77,7 +73,7 @@ def get_library(library_id, num_documents):
 
     documents = []
     for i in range(num_paginates):
-        print('Pagination {} out of {}'.format(i+1, num_paginates))
+        print(f'Pagination {i + 1} out of {num_paginates}')
 
         r = requests.get(
             '{}/libraries/{id}?start={start}&rows={rows}'.format(
@@ -128,10 +124,7 @@ if __name__ == '__main__':
     # Collect all the documents/bibcodes from each library
     for library in libraries:
 
-        print(
-            'Collecting library: {} [{}]'
-            .format(library['name'], library['id'])
-        )
+        print(f"Collecting library: {library['name']} [{library['id']}]")
 
         documents = get_library(
             library_id=library['id'],

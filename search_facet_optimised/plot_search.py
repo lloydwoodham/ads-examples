@@ -79,11 +79,7 @@ def h_index(citations):
     c = list(citations)
     c.sort(reverse=True)
 
-    for i in range(len(c)):
-        if i > c[i]:
-            return i
-
-    return len(c)
+    return next((i for i in range(len(c)) if i > c[i]), len(c))
 
 
 def main(

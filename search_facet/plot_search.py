@@ -77,11 +77,7 @@ def get_numbers_of_papers_raw(p):
     }
 
     for article in p:
-        if article.year is None:
-            y = article.pubdate.split('-')[0]
-        else:
-            y = article.year
-
+        y = article.pubdate.split('-')[0] if article.year is None else article.year
         try:
             years['total papers'][y] += 1
         except KeyError:
@@ -104,8 +100,8 @@ def get_numbers_of_papers_raw(p):
     total_paper, ref_paper = [], []
     y = []
 
-    for i in range(len(year)):
-        k = year[i]
+    for item in year:
+        k = item
 
         y.append(datetime.strptime(k, '%Y'))
         total_paper.append(years['total papers'].get(k, 0))
@@ -126,11 +122,7 @@ def h_index(citations):
     c = list(citations)
     c.sort(reverse=True)
 
-    for i in range(len(c)):
-        if i > c[i]:
-            return i
-
-    return len(c)
+    return next((i for i in range(len(c)) if i > c[i]), len(c))
 
 
 def main(output_path, figure_format, orcid=False, query=False, save=False, plot=False, test=False, log=False, rows=200, max_pages=1):
@@ -143,29 +135,29 @@ def main(output_path, figure_format, orcid=False, query=False, save=False, plot=
 
     fl = ['bibcode', 'year', 'pubdate', 'read_count', 'citation_count', 'property']
 
-    print('Using rows: {} with max_pages: {}'.format(rows, max_pages))
-    print('Field parameters requested: {}'.format(fl))
+    print(f'Using rows: {rows} with max_pages: {max_pages}')
+    print(f'Field parameters requested: {fl}')
 
     # See what the user has given to generate the metrics plot
     if query:
         sq = ads.SearchQuery(q=query, fl=fl, rows=rows, max_pages=max_pages, sort='citation_count desc')
         p = list(sq)
         bibcodes = [i.bibcode for i in sq.articles]
-        print('You gave a query: {}'.format(query))
-        print('Found {} bibcodes (e.g., {})'.format(len(bibcodes), bibcodes[0:4]))
+        print(f'You gave a query: {query}')
+        print(f'Found {len(bibcodes)} bibcodes (e.g., {bibcodes[:4]})')
     elif orcid:
-        query = 'orcid:{}'.format(orcid)
+        query = f'orcid:{orcid}'
         sq = ads.SearchQuery(q=query, fl=fl, rows=rows, max_pages=max_pages, sort='citation_count desc')
         p = list(sq)
         bibcodes = [i.bibcode for i in sq.articles]
-        print('You gave an ORCiD iD: {}'.format(orcid))
-        print('Found {} bibcodes (e.g., {})'.format(len(bibcodes), bibcodes[0:4]))
+        print(f'You gave an ORCiD iD: {orcid}')
+        print(f'Found {len(bibcodes)} bibcodes (e.g., {bibcodes[:4]})')
     else:
         sys.exit()
 
     # Number found
-    print('Number of results found: {}'.format(sq.response.numFound))
-    print('Number of results downloaded: {}'.format(len(sq.articles)))
+    print(f'Number of results found: {sq.response.numFound}')
+    print(f'Number of results downloaded: {len(sq.articles)}')
 
     # Number of papers
     y, tot_pap, ref_pap = get_numbers_of_papers_raw(p)
@@ -179,8 +171,15 @@ def main(output_path, figure_format, orcid=False, query=False, save=False, plot=
         ax3 = fig.add_subplot(313)
 
         # Number of papers
-        step(ax1, y, tot_pap - ref_pap, label='Not refereed: {}'.format(tot_pap.sum() - ref_pap.sum()), color='green')
-        step(ax1, y, ref_pap, label='Refereed: {}'.format(ref_pap.sum()), color='blue')
+        step(
+            ax1,
+            y,
+            tot_pap - ref_pap,
+            label=f'Not refereed: {tot_pap.sum() - ref_pap.sum()}',
+            color='green',
+        )
+
+        step(ax1, y, ref_pap, label=f'Refereed: {ref_pap.sum()}', color='blue')
 
         y_max = max((tot_pap-ref_pap).max(), ref_pap.max()) + 1
         ax1.set_ylim([0, y_max])
@@ -192,10 +191,19 @@ def main(output_path, figure_format, orcid=False, query=False, save=False, plot=
         # Number of citations
         tot_cite = numpy.array([i.citation_count for i in sq.articles])
         h = h_index(tot_cite)
-        ax2.errorbar(numpy.arange(1, tot_cite.size+1, 1), tot_cite, label='Total citations: {}'.format(int(tot_cite.sum())), ls='-', color='blue', lw=3, alpha=0.5)
+        ax2.errorbar(
+            numpy.arange(1, tot_cite.size + 1, 1),
+            tot_cite,
+            label=f'Total citations: {int(tot_cite.sum())}',
+            ls='-',
+            color='blue',
+            lw=3,
+            alpha=0.5,
+        )
+
         h_x = numpy.arange(0, h+1, 1)
-        h_y = numpy.array([h for i in h_x])
-        ax2.errorbar(h_x, h_y, lw=3, color='black', alpha=0.5, label='H-index: {}'.format(h))
+        h_y = numpy.array([h for _ in h_x])
+        ax2.errorbar(h_x, h_y, lw=3, color='black', alpha=0.5, label=f'H-index: {h}')
         ax2.errorbar(h_y, h_x, lw=3, color='black', alpha=0.5)
 
         ax2.set_ylabel('Total numer of citations per paper')
@@ -218,11 +226,20 @@ def main(output_path, figure_format, orcid=False, query=False, save=False, plot=
         tot_read = numpy.array(tot_read)
 
         h = h_index(tot_read)
-        ax3.errorbar(numpy.arange(1, tot_read.size+1, 1), tot_read, label='Total reads: {}'.format(int(tot_read.sum())), ls='-', color='blue', lw=3, alpha=0.5)
+        ax3.errorbar(
+            numpy.arange(1, tot_read.size + 1, 1),
+            tot_read,
+            label=f'Total reads: {int(tot_read.sum())}',
+            ls='-',
+            color='blue',
+            lw=3,
+            alpha=0.5,
+        )
+
 
         h_x = numpy.arange(0, h+1, 1)
-        h_y = numpy.array([h for i in h_x])
-        ax3.errorbar(h_x, h_y, lw=3, color='black', alpha=0.5, label='H-index: {}'.format(h))
+        h_y = numpy.array([h for _ in h_x])
+        ax3.errorbar(h_x, h_y, lw=3, color='black', alpha=0.5, label=f'H-index: {h}')
         ax3.errorbar(h_y, h_x, lw=3, color='black', alpha=0.5)
 
         ax3.set_ylabel('Total numer of reads per paper')
@@ -238,21 +255,21 @@ def main(output_path, figure_format, orcid=False, query=False, save=False, plot=
         newax.imshow(im)
         newax.axis('off')
 
-        figure_path = '{}/search_metrics.{}'.format(output_path, figure_format)
+        figure_path = f'{output_path}/search_metrics.{figure_format}'
         plt.savefig(figure_path)
 
     # Save to disk if requested
     if save == 'csv':
-        with open('{}/number.csv'.format(output_path), 'w') as f:
+        with open(f'{output_path}/number.csv', 'w') as f:
 
-                f.write('#year,total_number,refereed_number\n')
-                for i in range(len(y)):
-                    f.write('{year},{tot},{ref}\n'.format(
-                        year=y[i].year,
-                        tot=tot_pap[i],
-                        ref=ref_pap[i]
-                    ))
-        with open('{}/citation_read.csv'.format(output_path), 'w') as f:
+            f.write('#year,total_number,refereed_number\n')
+            for i in range(len(y)):
+                f.write('{year},{tot},{ref}\n'.format(
+                    year=y[i].year,
+                    tot=tot_pap[i],
+                    ref=ref_pap[i]
+                ))
+        with open(f'{output_path}/citation_read.csv', 'w') as f:
             f.write('#bibcode,citation_count,read_count\n')
             for i in sq.articles:
                 f.write('{bib},{cit},{read}\n'.format(

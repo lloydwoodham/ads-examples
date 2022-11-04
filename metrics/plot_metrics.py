@@ -78,10 +78,9 @@ def get_numbers_of_papers(metrics):
     publications = metrics['histograms']['publications']
 
     year, total, year_refereed, refereed = [], [], [], []
-    y = list(publications['all publications'].keys())
-    y.sort()
-    for i in range(len(y)):
-        k = y[i]
+    y = sorted(publications['all publications'].keys())
+    for item in y:
+        k = item
         year.append(datetime.strptime(k, '%Y'))
         total.append(publications['all publications'][k])
         refereed.append(publications['refereed publications'][k])
@@ -101,10 +100,9 @@ def get_citations_of_papers(metrics):
 
     citations = metrics['histograms']['citations']
 
-    y = list(citations['refereed to refereed'].keys())
-    y.sort()
-    for i in range(len(y)):
-        k = y[i]
+    y = sorted(citations['refereed to refereed'].keys())
+    for item in y:
+        k = item
         year_citation.append(datetime.strptime(k, '%Y'))
         ref_to_ref.append(citations['refereed to refereed'][k])
         ref_to_non_ref.append(citations['refereed to nonrefereed'][k])
@@ -123,10 +121,9 @@ def get_indices_of_papers(metrics):
     numpy arrays.
     """
     year_h, h, g, tori, i10, read10, i100 = [], [], [], [], [], [], []
-    y = list(metrics['time series']['h'].keys())
-    y.sort()
-    for i in range(len(y)):
-        k = y[i]
+    y = sorted(metrics['time series']['h'].keys())
+    for item in y:
+        k = item
         h.append(metrics['time series']['h'][k])
         g.append(metrics['time series']['g'][k])
         i10.append(metrics['time series']['i10'][k])
@@ -149,10 +146,9 @@ def get_reads_of_papers(metrics):
     numpy arrays.
     """
     year_reads, total, reads_ref = [], [], []
-    y = list(metrics['histograms']['reads']['all reads'].keys())
-    y.sort()
-    for i in range(len(y)):
-        k = y[i]
+    y = sorted(metrics['histograms']['reads']['all reads'].keys())
+    for item in y:
+        k = item
         year_reads.append(datetime.strptime(k, '%Y'))
         total.append(metrics['histograms']['reads']['all reads'][k])
         reads_ref.append(metrics['histograms']['reads']['refereed reads'][k])
@@ -220,7 +216,7 @@ def build_latex(metrics, orcid_id=None, plot=None, desc=None):
 
     orcid = '{{\\bf ORCiD iD}}: {}'.format(orcid_id) if orcid_id else ''
     plotpdf = '\\includegraphics[height=0.95\\textheight]{metrics.pdf}' if plot else ''
-    desc = desc if desc else ''
+    desc = desc or ''
 
     rendered_latex = latex_template.render(
         orcid_id=orcid,
@@ -286,7 +282,7 @@ def build_latex(metrics, orcid_id=None, plot=None, desc=None):
 
     # Build laTeX
     cmd = ['pdflatex', 'mymetrics.tex']
-    print('Building LaTeX: {}'.format(' '.join(cmd)))
+    print(f"Building LaTeX: {' '.join(cmd)}")
     p = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -294,7 +290,7 @@ def build_latex(metrics, orcid_id=None, plot=None, desc=None):
     )
     out, err = p.communicate()
     if err:
-        print('LaTeX compilation error: {}'.format(err))
+        print(f'LaTeX compilation error: {err}')
 
 
 def save_metrics(metrics):
@@ -370,11 +366,7 @@ def get_numbers_of_papers_raw(sq):
     # Do it in two steps because I'm too lazy to do it in a nice way
     years = {'total': {}, 'ref': {}}
     for article in sq:
-        if article.year is None:
-            y = article.pubdate.split('-')[0]
-        else:
-            y = article.year
-
+        y = article.pubdate.split('-')[0] if article.year is None else article.year
         try:
             years['total'][y] += 1
         except KeyError:
@@ -386,14 +378,12 @@ def get_numbers_of_papers_raw(sq):
             except KeyError:
                 years['ref'][y] = 1
 
-    year = list(years['total'].keys())
-
-    year.sort()
+    year = sorted(years['total'].keys())
     number = []
     number_ref = []
     y = []
-    for i in range(len(year)):
-        k = year[i]
+    for item in year:
+        k = item
         y.append(datetime.strptime(k, '%Y'))
         number.append(years['total'][k])
         number_ref.append(years['ref'].get(k, 0))
@@ -413,25 +403,25 @@ def main(output_path, figure_format, orcid=False, bibcodes=False, query=False, s
     rows = 2000
     max_pages = 1
 
-    print('Using rows: {} with max_pages: {}'.format(rows, max_pages))
+    print(f'Using rows: {rows} with max_pages: {max_pages}')
 
     # See what the user has given to generate the metrics plot
     if query:
         sq = ads.SearchQuery(q=query, fl=fl, rows=rows, max_pages=max_pages)
         sq.execute()
         bibcodes = [i.bibcode for i in sq.articles]
-        print('You gave a query: {}'.format(query))
-        print('Found {} bibcodes (e.g., {})'.format(len(bibcodes), bibcodes[0:4]))
+        print(f'You gave a query: {query}')
+        print(f'Found {len(bibcodes)} bibcodes (e.g., {bibcodes[:4]})')
     elif orcid:
-        query = 'orcid:{}'.format(orcid)
+        query = f'orcid:{orcid}'
         sq = ads.SearchQuery(q=query, fl=fl, rows=rows, max_pages=max_pages)
         sq.execute()
         bibcodes = [i.bibcode for i in sq.articles]
-        print('You gave an ORCiD iD: {}'.format(orcid))
-        print('Found {} bibcodes (e.g., {})'.format(len(bibcodes), bibcodes[0:4]))
+        print(f'You gave an ORCiD iD: {orcid}')
+        print(f'Found {len(bibcodes)} bibcodes (e.g., {bibcodes[:4]})')
     elif bibcodes:
         sq = False
-        print('You gave {} bibcodes: {}'.format(len(bibcodes), bibcodes[0:4]))
+        print(f'You gave {len(bibcodes)} bibcodes: {bibcodes[:4]}')
     else:
         sys.exit()
 
@@ -523,16 +513,16 @@ def main(output_path, figure_format, orcid=False, bibcodes=False, query=False, s
         leg4 = ax4.legend(loc=0)
         leg4.draw_frame(False)
 
-        figure_path = '{}/metrics.{}'.format(output_path, figure_format)
+        figure_path = f'{output_path}/metrics.{figure_format}'
         plt.savefig(figure_path)
 
     # Save to disk if requested
     if save == 'csv':
         for output in [number, citation, index, reads]:
-            with open('{}/{}.{}'.format(output_path, output['name'], save), 'w') as f:
+            with open(f"{output_path}/{output['name']}.{save}", 'w') as f:
 
-                keys = [i for i in output.keys() if i != 'name' and i != 'year']
-                f.write('#year,{}\n'.format(','.join(keys)))
+                keys = [i for i in output.keys() if i not in ['name', 'year']]
+                f.write(f"#year,{','.join(keys)}\n")
 
                 for i in range(len(output['year'])):
                     f.write('{year},{other}\n'.format(
